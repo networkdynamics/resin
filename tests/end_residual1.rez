@@ -1,0 +1,12 @@
+# Run with rho = 10
+# This test is looking at the algorithm's ability to pick up
+# on the last location as a tie-breaker.  Solution should be:
+#   [(0,B)]
+#
+# Crucially, the move tree for this should NOT have A and B being
+# equal... B definitively wins.
+
+A,9
+B,9
+C,2
+B,1
