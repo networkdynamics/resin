@@ -1,4 +1,10 @@
+import os, os.path
+import logging
 
+logger = logging.getLogger(os.path.basename(__name__))
+
+def logging_level():
+    return logger.getEffectiveLevel()
 
 # location history is a list of pairs:
 # [(c1,w1),(c2,w2),...,(cn,wn)]
@@ -138,22 +144,16 @@ def reconstruct_residence_history(X):
     min_away = float('infinity')
 
     # compute the cost of residence ending at location l at time iF
-    print('Total away costs:')
+    if logging_level() == logging.DEBUG: print('Total away costs:')
     for l in X.L:
         away_time = compute_A(X.iF,l,X) + compute_trailing_cost(l,X)
     
-        print('\t%s = %d' % (l,away_time))
+        if logging_level() == logging.DEBUG: print('\t%s = %d' % (l,away_time))
         if away_time < min_away:
             min_loc = l
             min_away = away_time
 
-    print()
-
-    ####
-    # DEBUGGING: print the move history for the winning final location
-    #print('Minimal move history:')
-    #print_move_history_tree(iF,min_loc,X,1)
-    #print()
+    if logging_level() == logging.DEBUG: print()
 
     ####
     # build the move history
@@ -197,6 +197,8 @@ def print_move_history_tree(i,l,X,indent=0):
 def main():
     import sys
 
+    logging.basicConfig(level=logging.DEBUG)
+
     # read in residence min time
     rho = int(sys.argv[1])
 
@@ -210,13 +212,14 @@ def main():
     i0 = compute_i0(W,rho)
     iF = compute_iF(W,i0,rho)
 
-    print('Context info:')
-    print('\tW =',W)
-    print('\ti0 =',i0)
-
+    if logging_level() == logging.DEBUG:
+        print('Context info:')
+        print('\tW =',W)
+        print('\ti0 =',i0)
+    
     memA = initialize_A(H,L,i0)
 
-    print()
+    if logging_level() == logging.DEBUG: print()
 
     X = Context()
     X.memA = memA
