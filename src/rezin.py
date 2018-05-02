@@ -1,20 +1,48 @@
 import os, os.path
 import logging
 
+"""
+@author = Derek Ruths <derek@derekruths.com>
+
+Overview
+--------
+This implements the rezin algorithm for residence history inference.
+
+In this library, location history is a list of pairs:
+ [(c1,w1),(c2,w2),...,(cn,wn)]
+   ci = location
+   wi = # of days in that location
+
+Residence history is a list of pairs:
+ [(c1,i1),(c2,i2),...]
+   cj = location
+   ij = index in the location history when the person made that place their residence
+
+To use the library
+------------------
+
+*Running the algorithm.* Call the rezin(...) function to run the full algorithm
+from start to finish and get the residence history for a specific location history.
+
+*Loading a location history.* Call the load_location_history(...) function.  It
+assumes a tab-separated file in which first column is location name, second
+column is the time of move (must be an integer).  See the .rez files in the
+tests/ directory.
+
+To run this file
+----------------
+
+You can run the algorithm by using this script directly:
+
+    python rezin.py <min_rez_time> <location_history_file>
+
+It will print a bunch of stuff with the residence history at the bottom.
+"""
+
 logger = logging.getLogger(os.path.basename(__name__))
 
 def logging_level():
     return logger.getEffectiveLevel()
-
-# location history is a list of pairs:
-# [(c1,w1),(c2,w2),...,(cn,wn)]
-#   ci = location
-#   wi = # of days in that location
-
-# residence history is a list of pairs:
-# [(c1,i1),(c2,i2),...]
-#   cj = location
-#   ij = index in the location history when the person made that place their residence
 
 
 valid_context_attrs = ['memA','i0','H','W','L']
@@ -25,7 +53,7 @@ class Context:
 
 ####
 # Setup functions
-def load_history(fname):
+def load_location_history(fname):
     fh = open(fname)
 
     H = []
@@ -144,16 +172,16 @@ def reconstruct_residence_history(X):
     min_away = float('infinity')
 
     # compute the cost of residence ending at location l at time iF
-    if logging_level() == logging.DEBUG: print('Total away costs:')
+    #if logging_level() == logging.DEBUG: print('Total away costs:')
     for l in X.L:
         away_time = compute_A(X.iF,l,X) + compute_trailing_cost(l,X)
     
-        if logging_level() == logging.DEBUG: print('\t%s = %d' % (l,away_time))
+        #if logging_level() == logging.DEBUG: print('\t%s = %d' % (l,away_time))
         if away_time < min_away:
             min_loc = l
             min_away = away_time
 
-    if logging_level() == logging.DEBUG: print()
+    #if logging_level() == logging.DEBUG: print()
 
     ####
     # build the move history
@@ -179,6 +207,36 @@ def reconstruct_residence_history(X):
 
     return R
 
+def rezin(H,rho):
+    """
+    Function for running the entire algorithm on
+        H the location history
+        rho the minimum residence time
+
+    Returns a residence history (as described above).
+    """
+    ####
+    # build context
+    L = compute_L(H)
+    W = compute_W(H)
+    i0 = compute_i0(W,rho)
+    iF = compute_iF(W,i0,rho)
+
+    X = Context()
+    X.memA = initialize_A(H,L,i0) # for memoizing the results of the dynamic algorithm
+    X.i0 = i0 # the index in the location history where we initialize the A's
+    X.iF = iF # the last index in the location history our dynamic algorithm should evaluate
+    X.H = H # the location history
+    X.W = W # the stay times for each position in the location history - for efficiency
+    X.L = L # the set of locations in the location history
+    X.rho = rho # the min residence time interval
+    X.n = len(H)-1 # the last index in the location history
+
+    # run the algorithm
+    rez_history = reconstruct_residence_history(X)
+
+    return rez_history
+
 ####
 # For visualization & debugging
 def print_move_history_tree(i,l,X,indent=0):
@@ -195,6 +253,11 @@ def print_move_history_tree(i,l,X,indent=0):
 ####
 # Main for testing this
 def main():
+    """
+    For running the algorithm on a location history.  Cmd-line arguments:
+        - minimum residence history
+        - location history file
+    """
     import sys
 
     logging.basicConfig(level=logging.DEBUG)
@@ -203,37 +266,12 @@ def main():
     rho = int(sys.argv[1])
 
     # load history
-    H = load_history(sys.argv[2]) 
+    H = load_location_history(sys.argv[2]) 
 
-    ####
-    # build context
-    L = compute_L(H)
-    W = compute_W(H)
-    i0 = compute_i0(W,rho)
-    iF = compute_iF(W,i0,rho)
-
-    if logging_level() == logging.DEBUG:
-        print('Context info:')
-        print('\tW =',W)
-        print('\ti0 =',i0)
-    
-    memA = initialize_A(H,L,i0)
-
-    if logging_level() == logging.DEBUG: print()
-
-    X = Context()
-    X.memA = memA
-    X.i0 = i0
-    X.iF = iF
-    X.H = H
-    X.W = W
-    X.L = L
-    X.rho = rho
-    X.n = len(H)-1
-
-    rez_history = reconstruct_residence_history(X)
-
+    rez_history = rezin(H,rho)
     print('Residence history:',rez_history)
+
+    return
 
 if __name__ == '__main__':
     main()
