@@ -5,8 +5,7 @@
 #
 # Crucially, the move tree for this should NOT have A and B being
 # equal... B definitively wins.
-
-A,9
-B,9
-C,2
-B,1
+A	9
+B	9
+C	2
+B	1

@@ -27,7 +27,7 @@ def load_history(fname):
         if line.startswith('#') or len(line.strip()) == 0:
             continue
 
-        loc,duration = line.strip().split(',')
+        loc,duration = line.strip().split('\t')
 
         H.append((loc,int(duration)))
 
