@@ -1,4 +1,7 @@
+# With rho=10, the residence history is A=>B
+# => A
 A	10
+# => B
 B	3
 A	4
 B	5
