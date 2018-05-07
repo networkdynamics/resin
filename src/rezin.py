@@ -299,7 +299,7 @@ def print_move_history_tree(i,l,X,indent=0):
         return 
     else:
         for last_rez in X.memA[cur_rez][1]:
-            print_move_history_tree(last_rez,X,indent+1) #TODO: caitrin you got rid of a * here due to error
+            print_move_history_tree(*last_rez,X,indent+1)
 
 def print_interleaved_histories(R,H):
     localH = list(H)
