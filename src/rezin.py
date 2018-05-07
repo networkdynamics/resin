@@ -388,7 +388,7 @@ def main():
             continue
         print "-----------------------"
         for e in H:
-            print e[1], "\t", e[0]
+            print "%s\t%d" %(e[0], e[1])
         try:
             rez_history = rezin(H,rho)
         except Exception as e:
