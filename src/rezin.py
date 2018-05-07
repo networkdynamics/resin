@@ -1,6 +1,7 @@
 import os, os.path
 import logging
-
+import numpy as np
+import csv
 """
 @author = Derek Ruths <derek@derekruths.com>
 
@@ -298,7 +299,7 @@ def print_move_history_tree(i,l,X,indent=0):
         return 
     else:
         for last_rez in X.memA[cur_rez][1]:
-            print_move_history_tree(*last_rez,X,indent+1)
+            print_move_history_tree(last_rez,X,indent+1) #TODO: caitrin you got rid of a * here due to error
 
 def print_interleaved_histories(R,H):
     localH = list(H)
@@ -314,6 +315,50 @@ def print_interleaved_histories(R,H):
 
     return
 
+def caitrin_read_history(inFile):
+    user_dict = {}
+
+    with open(inFile, "rb") as csvFile:
+        reader = csv.reader(csvFile)
+        for line in reader:
+            if line[0]:
+                user = line[0]
+            else:
+                continue
+            if user not in user_dict:
+                user_dict[user] = list()
+            country = line[3]
+            if len(country) == 3 and country.isalpha(): #funky file
+                datetime_object = np.datetime64(line[2])
+                user_dict[user].append((datetime_object, country)) #(time, country)
+    print "finished reading file"
+
+    user_histories = []
+    for user in sorted(user_dict):
+        user_dates = sorted(user_dict[user], key=lambda x: x[0])
+        time_warped_history = []
+
+        prev_loc = user_dates[0][1]
+        prev_date = user_dates[0][0]
+        cur_sum = 0
+
+        for d in user_dates[1:]:
+            if d[1] == prev_loc:
+                cur_sum += (d[0] - prev_date).item().days
+                prev_date = d[0]
+            else:
+                if cur_sum == 0:
+                    cur_sum = 1
+                lh = (prev_loc, cur_sum)
+                time_warped_history.append(lh)
+                prev_loc = d[1]
+                cur_sum = 0
+        if cur_sum != 0:
+            lh = (prev_loc, cur_sum)
+            time_warped_history.append(lh)
+
+        user_histories.append(time_warped_history)
+    return user_histories
 ####
 # Main for testing this
 def main():
@@ -327,18 +372,36 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
 
     # read in residence min time
-    rho = int(sys.argv[1])
+
+    #rho = int(sys.argv[1])
 
     # load history
-    H = load_location_history(sys.argv[2]) 
+    #H = load_location_history(sys.argv[2])
 
-    rez_history = rezin(H,rho)
-    print('Residence history:',rez_history)
+    inFile = sys.argv[1]
+    user_hists = caitrin_read_history(inFile)
+    rho = 120
 
-    print('\nInterleaved histories:')
-    print_interleaved_histories(rez_history,H)
+    for H in user_hists:
 
-    return
+        if len(H) > 100: #quick check for bots
+            continue
+        print "-----------------------"
+        for e in H:
+            print e[1], "\t", e[0]
+        try:
+            rez_history = rezin(H,rho)
+        except Exception as e:
+            print e.message, e.args
+            continue
+
+        print('Residence history:',rez_history)
+
+        print('\nInterleaved histories:')
+        print_interleaved_histories(rez_history,H)
+
+
+    #return
 
 if __name__ == '__main__':
     main()
