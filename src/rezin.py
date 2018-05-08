@@ -2,41 +2,32 @@ import os, os.path
 import logging
 import numpy as np
 import csv
+
 """
 @author = Derek Ruths <derek@derekruths.com>
-
 Overview
 --------
 This implements the rezin algorithm for residence history inference.
-
 In this library, location history is a list of pairs:
  [(c1,w1),(c2,w2),...,(cn,wn)]
    ci = location
    wi = # of days in that location
-
 Residence history is a list of pairs:
  [(c1,i1),(c2,i2),...]
    cj = location
    ij = index in the location history when the person made that place their residence
-
 To use the library
 ------------------
-
 *Running the algorithm.* Call the rezin(...) function to run the full algorithm
 from start to finish and get the residence history for a specific location history.
-
 *Loading a location history.* Call the load_location_history(...) function.  It
 assumes a tab-separated file in which first column is location name, second
 column is the time of move (must be an integer).  See the .rez files in the
 tests/ directory.
-
 To run this file
 ----------------
-
 You can run the algorithm by using this script directly:
-
     python rezin.py <min_rez_time> <location_history_file>
-
 It will print a bunch of stuff with the residence history at the bottom.
 """
 
@@ -77,9 +68,10 @@ def compute_i0(W,rho):
     # couldn't find an i0!  The history isn't long enough
     return None
 
-def compute_iS(W,rho):
-    for i in range(1,len(W)):
-        if sum(W[1:(i+1)]) >= rho:
+def compute_iS(W,rho,i0):
+    # There's something going on here .... threshold should be 2*rho... start at i0?
+    for i in range(i0+1,len(W)):
+        if sum(W[(i0+1):(i+1)]) >= rho:
             return i
 
     # couldn't find an iS!  The history isn't long enough - just use the base case.
@@ -140,13 +132,13 @@ def compute_A(i,l,X,debug=False):
 
     if (i,l) in X.memA:
         return X.memA[(i,l)][0]
-     
+
     if debug: print('\tA(%d,%s)' % (i,l))
 
     Q = compute_Q(i,X)
-    
+
     if debug: print('\tQ=%s' % Q)
-    
+
     min_prev_rezes = None
     min_total_cost = float('infinity')
     for j in Q: #range(X.i0,Q+1):
@@ -204,10 +196,10 @@ def reconstruct_residence_history(X,debug=False):
     for l in X.L:
         dyn_away_time = compute_A(X.iF,l,X,debug=debug)
         trailing_away_time = compute_trailing_cost(l,X)
-        away_time = dyn_away_time + trailing_away_time 
+        away_time = dyn_away_time + trailing_away_time
         if debug:
             print('\t%s\t%d=%d+%d' % (l,away_time,dyn_away_time,trailing_away_time))
-    
+
         if debug:
             print_move_history_tree(X.iF,l,X,2)
 
@@ -233,7 +225,7 @@ def reconstruct_residence_history(X,debug=False):
     ####
     # make the residence history from the move history
     R = []
-    next_move_idx = 0 
+    next_move_idx = 0
     while len(move_history) > 0:
         move = move_history.pop(0)
 
@@ -252,7 +244,6 @@ def rezin(H,rho,debug=False):
     Function for running the entire algorithm on
         H the location history
         rho the minimum residence time
-
     Returns a residence history (as described above).
     """
     ####
@@ -260,7 +251,7 @@ def rezin(H,rho,debug=False):
     L = compute_L(H)
     W = compute_W(H)
     i0 = compute_i0(W,rho)
-    iS = compute_iS(W,rho)
+    iS = compute_iS(W,rho,i0)
     iF = compute_iF(W,i0,rho)
 
     X = Context()
@@ -296,10 +287,10 @@ def print_move_history_tree(i,l,X,indent=0):
     print('\t'*indent,cur_rez)
 
     if i == X.i0:
-        return 
+        return
     else:
         for last_rez in X.memA[cur_rez][1]:
-            print_move_history_tree(*last_rez,X,indent+1)
+            print_move_history_tree(last_rez,X,indent+1)
 
 def print_interleaved_histories(R,H):
     localH = list(H)
