@@ -76,9 +76,10 @@ def compute_i0(W,rho):
     # couldn't find an i0!  The history isn't long enough
     return None
 
-def compute_iS(W,rho):
-    for i in range(1,len(W)):
-        if sum(W[1:(i+1)]) >= rho:
+def compute_iS(W,rho,i0):
+    # There's something going on here .... threshold should be 2*rho... start at i0?
+    for i in range(i0+1,len(W)):
+        if sum(W[(i0+1):(i+1)]) >= rho:
             return i
 
     # couldn't find an iS!  The history isn't long enough - just use the base case.
@@ -259,7 +260,7 @@ def rezin(H,rho,debug=False):
     L = compute_L(H)
     W = compute_W(H)
     i0 = compute_i0(W,rho)
-    iS = compute_iS(W,rho)
+    iS = compute_iS(W,rho,i0)
     iF = compute_iF(W,i0,rho)
 
     X = Context()
