@@ -260,7 +260,35 @@ def rezin(H,rho,debug=False):
     L = compute_L(H)
     W = compute_W(H)
     i0 = compute_i0(W,rho)
+    
+    # if we don't have a long enough history even for i0, pick
+    # the max time location
+    if i0 is None:
+        max_l = None
+        max_stay = -1
+        for l in L:
+            stay_len = sum([h[1] for h in H if h[0] == l])
+            if stay_len > max_stay:
+                max_l = l
+                max_stay = stay_len
+
+        return [(max_l,0)]
+
     iS = compute_iS(W,rho,i0)
+
+    # if we don't have a long enough  history for iS, pick
+    # the max time location
+    if iS is None:
+        max_l = None
+        max_stay = -1
+        for l in L:
+            stay_len = sum([h[1] for h in H if h[0] == l])
+            if stay_len > max_stay:
+                max_l = l
+                max_stay = stay_len
+
+        return [(max_l,0)]
+
     iF = compute_iF(W,i0,rho)
 
     X = Context()
